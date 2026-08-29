@@ -1,0 +1,139 @@
+models:
+  deepmosaics-bisenet-detector:
+    backend: detector_bisenet
+    title: DeepMosaics mosaic-position BiSeNet (official)
+    version: 0.5.1
+    aliases:
+    - mosaic-detector
+    - detector
+    devices:
+    - cuda
+    - mps
+    - directml
+    - cpu
+    license: upstream-checkpoint; GPL-3.0-only code
+    homepage: https://github.com/HypoX64/DeepMosaics
+    status: released
+    notes: Original author's drop-in mosaic-position checkpoint. The detector is
+      managed separately from restoration backends but uses the same verified
+      download/cache mechanism.
+    files:
+      weights:
+        filename: mosaic_position.pth
+        urls:
+        - https://drive.usercontent.google.com/download?id=11uUaHPVq5zubGP9_xAOb5O1vPu9GK0XR&export=download&confirm=t
+        sha256: 8415ed600960ad4babde790c6d193b191df46a35b581eb372d1fccea8cebcc3d
+        size_bytes: 49704452
+  lada-basicvsrpp:
+    backend: basicvsrpp_portable
+    title: LADA-recipe portable BasicVSR++ (development only)
+    version: 0.1.0
+    aliases:
+    - portable-dev
+    devices:
+    - cuda
+    - mps
+    - cpu
+    license: AGPL-3.0-only
+    homepage: https://github.com/ladaapp/lada
+    status: planned
+    notes: Unreleased compact research backbone. Local files made by
+      tools/make_smoke_fixtures.py contain random weights and are never a quality
+      model. Train and validate a real checkpoint before changing this status.
+    files:
+      weights:
+        filename: lada_basicvsrpp_mosaic_v0.1.0.pth
+        urls: []
+        sha256: null
+  mosaicvr-lite:
+    backend: mosaicvr_lite
+    title: MosaicVR-Lite (compact, MPS-first)
+    version: 0.1.0
+    aliases:
+    - lite
+    devices:
+    - cuda
+    - mps
+    - cpu
+    license: GPL-3.0-only
+    homepage: https://github.com/HypoX64/DeepMosaics
+    status: planned
+    notes: Compact backbone built from standard PyTorch ops for Apple Silicon / low-end
+      GPUs. Train it with train/mosaicvr/train.py --arch lite, then drop the checkpoint
+      into the cache folder (or publish it and fill the url+sha256 here). No code
+      change is needed to make it the default.
+  legacy-pix2pix:
+    backend: legacy_pix2pix
+    title: DeepMosaics pix2pix (unet_128 / unet_256 / resnet_9blocks / HD)
+    version: 0.5.1
+    aliases:
+    - legacy
+    devices:
+    - cuda
+    - directml
+    - mps
+    - cpu
+    license: GPL-3.0-only code; user-provided checkpoint
+    homepage: https://github.com/HypoX64/DeepMosaics
+    status: released
+    notes: Original per-frame GAN checkpoints. AMD/low-spec fallback via DirectML.
+      Checkpoints are user-provided (--model_path), same as classic usage.
+  traditional:
+    backend: traditional
+    title: Traditional blur/down/up cleaner (no neural network)
+    version: 1.0.0
+    aliases:
+    - classic
+    - none
+    devices:
+    - cuda
+    - directml
+    - mps
+    - cpu
+    license: GPL-3.0-only
+    status: released
+  deepmosaics-video-baseline:
+    backend: legacy_video
+    title: DeepMosaics clean_youknow_video (BVDNet) - fixed baseline
+    version: 0.5.1
+    aliases:
+    - dm-baseline
+    devices:
+    - cuda
+    - mps
+    - cpu
+    license: upstream-checkpoint; GPL-3.0-only code
+    homepage: https://github.com/HypoX64/DeepMosaics
+    status: released
+    notes: 'Official trained BVDNet checkpoint; role: frozen baseline for evals.'
+    files:
+      weights:
+        filename: clean_youknow_video.pth
+        urls:
+        - https://drive.usercontent.google.com/download?id=1ulct4RhRxQp1v5xwEmUH7xz7AK42Oqlw&export=download&confirm=t
+        sha256: 5643ca297c13920b8ffd39a0d85296e494683a69e5e8204d662653d24c582766
+  lada-official-basicvsrpp:
+    backend: basicvsrpp_lada_official
+    title: LADA generic v1.2 (official BasicVSR++) - fixed baseline
+    version: '1.2'
+    aliases:
+    - quality
+    - lada
+    - lada-baseline
+    devices:
+    - cuda
+    - mps
+    - cpu
+    license: AGPL-3.0-only
+    homepage: https://github.com/ladaapp/lada
+    status: released
+    notes: Official EMA generator weights. This is the initial quality backend.
+      CUDA and CPU use torchvision deformable convolution; MPS FP32 inference is
+      covered by the hardware integration test and may require a current PyTorch
+      and torchvision build.
+    files:
+      weights:
+        filename: lada_mosaic_restoration_model_generic_v1.2.pth
+        urls:
+        - https://huggingface.co/ladaapp/lada/resolve/bcf461d46d9a98981fc64b815df5178f42215cdf/lada_mosaic_restoration_model_generic_v1.2.pth?download=true
+        sha256: d404152576ce64fb5b2f315c03062709dac4f5f8548934866cd01c823c8104ee
