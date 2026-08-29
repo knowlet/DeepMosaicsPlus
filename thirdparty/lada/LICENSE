@@ -1,0 +1,10 @@
+The vendored files in this directory are from https://github.com/ladaapp/lada
+at revision 20cb34a20a83c72c87a991d2c949032c70085b16.
+
+SPDX-FileCopyrightText: Lada Authors
+SPDX-License-Identifier: AGPL-3.0-only
+
+DeepMosaicsPlus portability modifications are documented in README.md in this
+directory. The complete AGPL-3.0 text is in ../../LICENSE-AGPL-3.0. Files with
+OpenMMLab/MMagic provenance also retain Apache-2.0 terms, whose complete text is
+in ../../LICENSE-APACHE-2.0.
