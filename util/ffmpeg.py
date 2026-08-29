@@ -204,6 +204,14 @@ def video2voice(videopath, voicepath, start_time='00:00:00', last_time='00:00:00
     except Exception:
         pass
 
+    # Videos without an audio stream: leave no temp voice file; image2video
+    # will simply produce a silent output.
+    if not native_codec:
+        print('[ffmpeg] no audio stream found, output will be silent')
+        if os.path.exists(voicepath):
+            os.remove(voicepath)
+        return
+
     target_ext = os.path.splitext(voicepath)[1].lower()
     mp3_compat = target_ext == '.mp3' and native_codec == 'mp3'
     aac_compat = target_ext in ('.aac', '.m4a') and native_codec == 'aac'
@@ -238,7 +246,36 @@ def get_duration(video_path):
 
 def to_seconds(timestr):
     h, m, s = map(float, timestr.split(":"))
-    return int(h * 3600 + m * 60 + s)
+    return h * 3600 + m * 60 + s
+
+
+def _plan_frame_segments(total_frames, fps, start_sec, segments):
+    """Return exact, non-overlapping ``(time, start_number, count)`` chunks."""
+    total_frames = max(0, int(total_frames))
+    if total_frames == 0:
+        return []
+    if fps <= 0:
+        raise ValueError("fps must be positive when planning exact frame segments")
+    segments = max(1, min(int(segments), total_frames))
+    base, remainder = divmod(total_frames, segments)
+    plan = []
+    offset = 0
+    for i in range(segments):
+        count = base + (1 if i < remainder else 0)
+        plan.append((float(start_sec) + offset / float(fps), offset + 1, count))
+        offset += count
+    assert offset == total_frames
+    return plan
+
+
+def _extracted_frame_paths(folder, ext):
+    pattern = re.compile(rf"^output_(\d{{6}})\.{re.escape(ext)}$")
+    return sorted(name for name in os.listdir(folder) if pattern.match(name))
+
+
+def _clear_extracted_frames(folder, ext):
+    for name in _extracted_frame_paths(folder, ext):
+        os.remove(os.path.join(folder, name))
 
 def run_ffmpeg_segment(args):
     videopath, output_template, fps, start_time, duration, part_num, ext, start_frame, expected_frames, progress, qv = args
@@ -273,20 +310,24 @@ def video2image_parallel(videopath, imagepath, fps=0, start_time='00:00:00', las
     ext = os.path.basename(imagepath).split('.')[-1]
     output_template = os.path.join(folder, f"output_%06d.{ext}")
 
+    os.makedirs(folder, exist_ok=True)
+    _clear_extracted_frames(folder, ext)
+
     start_sec = to_seconds(start_time)
     total_dur = get_duration(videopath)
     # Bug fix: use float duration, not int-truncated seconds, for accurate frame count
-    dur = (float(last_time.replace(':', ' ').split()[0]) * 3600
-           + float(last_time.replace(':', ' ').split()[1]) * 60
-           + float(last_time.replace(':', ' ').split()[2])
-           ) if last_time != '00:00:00' else total_dur - start_sec
+    dur = to_seconds(last_time) if last_time != '00:00:00' else total_dur - start_sec
 
     if segments is None:
         segments = max(1, min(os.cpu_count() or 4, 16))
 
-    # Bug fix: use float dur so frame count is accurate
-    total_frames = int(fps * dur) if fps != 0 else 0
-    frames_per_segment = max(1, total_frames // segments) if total_frames else 1
+    # Round to the CFR output timeline. Flooring caused 300-frame inputs to
+    # become 297 after segment-boundary overwrites.
+    total_frames = int(round(float(fps) * dur)) if fps != 0 else 0
+    plan = _plan_frame_segments(total_frames, float(fps), start_sec, segments) \
+        if total_frames else []
+    if plan:
+        segments = len(plan)
 
     manager = Manager()
     # Bug fix: use a Lock so read-modify-write on progress is atomic
@@ -295,11 +336,8 @@ def video2image_parallel(videopath, imagepath, fps=0, start_time='00:00:00', las
     done_flag = manager.Value('b', False)  # signals watcher to stop
 
     args_list = []
-    for i in range(segments):
-        seg_start = start_sec + i * (dur / segments)
-        seg_dur = (dur / segments) if i < segments - 1 else (dur - (dur / segments) * i)
-        start_frame = i * frames_per_segment + 1
-        expected = frames_per_segment if i < segments - 1 else max(0, total_frames - frames_per_segment * (segments - 1))
+    for i, (seg_start, start_frame, expected) in enumerate(plan):
+        seg_dur = expected / float(fps)
         args_list.append((videopath, output_template, fps, seg_start, seg_dur, i, ext,
                           start_frame, expected, progress, progress_lock, qv))
 
@@ -330,6 +368,31 @@ def video2image_parallel(videopath, imagepath, fps=0, start_time='00:00:00', las
             # even if pool.map raised an exception
             done_flag.value = True
         watcher.join(timeout=2.0)  # bounded join — never hangs forever
+
+    if total_frames:
+        expected_names = [f"output_{i:06d}.{ext}" for i in range(1, total_frames + 1)]
+        actual_names = _extracted_frame_paths(folder, ext)
+        if actual_names != expected_names:
+            # Seeking around GOP boundaries is codec-dependent. A single-pass
+            # retry is slower but is the correctness backstop for every input.
+            print(f"[ffmpeg] segmented extraction produced {len(actual_names)}/"
+                  f"{total_frames} frames; retrying single-pass")
+            _clear_extracted_frames(folder, ext)
+            cmd = ['ffmpeg', '-y']
+            if hwaccel is not None:
+                cmd += ['-hwaccel', hwaccel]
+            if start_sec > 0:
+                cmd += ['-ss', str(start_sec)]
+            cmd += ['-i', videopath, '-r', str(fps),
+                    '-frames:v', str(total_frames), '-f', 'image2',
+                    '-q:v', str(qv), '-start_number', '1', output_template]
+            subprocess.run(cmd, check=True, stdin=subprocess.DEVNULL)
+            actual_names = _extracted_frame_paths(folder, ext)
+            if actual_names != expected_names:
+                raise RuntimeError(
+                    f"frame extraction invariant failed: expected {total_frames} "
+                    f"contiguous frames, got {len(actual_names)}")
+    return total_frames if total_frames else len(_extracted_frame_paths(folder, ext))
 
 def run_ffmpeg_with_progress(cmd, total_duration_sec, progress_callback=None):
     cmd = cmd + ['-progress', 'pipe:1', '-nostats']
@@ -373,7 +436,8 @@ def run_ffmpeg_segment_with_progress(args):
     # whether we have a TTY. Without this, ffmpeg suppresses frame= stats when
     # stderr is a pipe. -nostats suppresses the human-readable stderr overlay.
     cmd += ['-progress', 'pipe:1', '-nostats']
-    cmd += ['-f', 'image2', '-q:v', str(qv), '-start_number', str(start_frame), output_template]
+    cmd += ['-frames:v', str(expected_frames), '-f', 'image2',
+            '-q:v', str(qv), '-start_number', str(start_frame), output_template]
 
     process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL,
                                stdin=subprocess.DEVNULL)

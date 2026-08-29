@@ -3,6 +3,7 @@ import customtkinter as ctk
 import tkinter as tk
 from tkinter import filedialog, messagebox
 import os
+import sys
 import subprocess
 import threading
 import queue
@@ -145,7 +146,25 @@ class DeepMosaicsUI:
         result_btn.grid(row=0, column=1)
         current_row += 1
         
-        # NetG
+        # Restoration model (unified interface)
+        model_label = ctk.CTkLabel(scroll_frame, text="Restoration model:")
+        model_label.grid(row=current_row, column=0, pady=5, sticky="w")
+        self.model_var = ctk.StringVar(value="auto")
+        model_dropdown = ctk.CTkOptionMenu(scroll_frame, variable=self.model_var,
+                                           values=["auto", "quality (BasicVSR++)", "lite (MosaicVR)", "traditional", "legacy (netG below)"])
+        model_dropdown.grid(row=current_row, column=1, pady=5, sticky="ew", padx=(10, 0))
+        current_row += 1
+
+        # Device
+        device_label = ctk.CTkLabel(scroll_frame, text="Device:")
+        device_label.grid(row=current_row, column=0, pady=5, sticky="w")
+        self.device_var = ctk.StringVar(value="auto")
+        device_dropdown = ctk.CTkOptionMenu(scroll_frame, variable=self.device_var,
+                                            values=["auto", "cuda", "mps", "directml", "cpu"])
+        device_dropdown.grid(row=current_row, column=1, pady=5, sticky="ew", padx=(10, 0))
+        current_row += 1
+
+        # NetG (legacy checkpoints)
         netg_label = ctk.CTkLabel(scroll_frame, text="Network G:")
         netg_label.grid(row=current_row, column=0, pady=5, sticky="w")
         self.netg_var = ctk.StringVar(value="auto")
@@ -337,7 +356,9 @@ class DeepMosaicsUI:
             self.result_entry.insert(0, dir_path)
     
     def generate_command(self):
-        cmd = ["python", "deepmosaic.py"]
+        script = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                              "deepmosaic.py")
+        cmd = [sys.executable, script]
         
         # Base arguments
         if self.debug_var.get():
@@ -370,6 +391,21 @@ class DeepMosaicsUI:
         netg = self.netg_var.get()
         if netg != "auto":
             cmd.extend(["--netG", netg])
+
+        # unified restoration model / device
+        model_sel = self.model_var.get()
+        if model_sel.startswith("quality"):
+            cmd.extend(["--model", "quality"])
+        elif model_sel.startswith("lite"):
+            cmd.extend(["--model", "lite"])
+        elif model_sel.startswith("traditional"):
+            cmd.extend(["--model", "traditional"])
+        elif model_sel.startswith("legacy"):
+            cmd.extend(["--model", "legacy"])
+
+        device_sel = self.device_var.get()
+        if device_sel and device_sel != "auto":
+            cmd.extend(["--device", device_sel])
         
         fps = self.fps_entry.get().strip()
         if fps and fps != "0":

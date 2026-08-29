@@ -1091,7 +1091,8 @@ class MainWindow(QMainWindow):
 
     # ── Command generation ─────────────────────────────────────────────────────
     def _generate_command(self):
-        cmd = ["python", "deepmosaic.py"]
+        cmd = [sys.executable,
+               str(Path(__file__).resolve().parent / "deepmosaic.py")]
 
         if self.debug_cb.isChecked():       cmd.append("--debug")
         gpu = self.gpu_in.text().strip()
