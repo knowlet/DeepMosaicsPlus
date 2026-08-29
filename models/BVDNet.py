@@ -99,17 +99,22 @@ def define_G(N=2, n_blocks=1, gpu_id='-1'):
     return netG
 
 ################################Discriminator################################
-def define_D(input_nc=6, ndf=64, n_layers_D=1, use_sigmoid=False, num_D=3, gpu_id='-1'):          
-    netD = MultiscaleDiscriminator(input_nc, ndf, n_layers_D, use_sigmoid, num_D)
+def define_D(input_nc=6, ndf=64, n_layers_D=1, use_sigmoid=False, num_D=3,
+             gpu_id='-1', return_features=False):
+    netD = MultiscaleDiscriminator(
+        input_nc, ndf, n_layers_D, use_sigmoid, num_D,
+        return_features=return_features)
     netD = model_util.todevice(netD,gpu_id)
     netD.apply(model_util.init_weights)
     return netD
 
 class MultiscaleDiscriminator(nn.Module):
-    def __init__(self, input_nc, ndf=64, n_layers=3, use_sigmoid=False, num_D=3):
+    def __init__(self, input_nc, ndf=64, n_layers=3, use_sigmoid=False,
+                 num_D=3, return_features=False):
         super(MultiscaleDiscriminator, self).__init__()
         self.num_D = num_D
         self.n_layers = n_layers
+        self.return_features = return_features
 
         for i in range(num_D):
             netD = NLayerDiscriminator(input_nc, ndf, n_layers, use_sigmoid)
@@ -117,6 +122,16 @@ class MultiscaleDiscriminator(nn.Module):
         self.downsample = nn.AvgPool2d(3, stride=2, padding=[1, 1], count_include_pad=False)
 
     def singleD_forward(self, model, input):
+        if self.return_features:
+            # Preserve the legacy Sequential/state_dict layout while exposing
+            # discriminator activations for real feature matching. The final
+            # item remains the PatchGAN logit consumed by GANLoss.
+            result = []
+            value = input
+            for layer in model:
+                value = layer(value)
+                result.append(value)
+            return result
         return [model(input)]
 
     def forward(self, input):        
