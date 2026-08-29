@@ -1,274 +1,298 @@
 <div align="center">
-  <img src="./imgs/logo_new.png" width="400"><br>
-  
-  # DeepMosaicsPlus
-  
-  **AI-powered mosaic removal for images and videos**
-  
-  [![Python 3.6+](https://img.shields.io/badge/python-3.6+-blue.svg)](https://www.python.org/downloads/)
-  [![PyTorch](https://img.shields.io/badge/PyTorch-1.0+-ee4c2c.svg)](https://pytorch.org/)
-  [![Platform](https://img.shields.io/badge/platform-Windows-lightgrey.svg)](https://www.microsoft.com/windows)
+  <img src="./imgs/logo_new.png" width="400" alt="DeepMosaicsPlus"><br>
 
+  # DeepMosaicsPlus
+
+  **Mosaic-aware video restoration with verified pretrained models**
+
+  [![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-blue.svg)](https://www.python.org/downloads/)
+  [![PyTorch 2.x](https://img.shields.io/badge/PyTorch-2.x-ee4c2c.svg)](https://pytorch.org/)
+  [![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-lightgrey.svg)](#hardware-support)
 </div>
 
----
+DeepMosaicsPlus combines the original DeepMosaics mosaic-specific detector and
+GAN workflow with LADA's dataset/restoration approach and a unified video
+restoration interface. The first usable quality backend is LADA's official
+BasicVSR++ checkpoint; a compact MPS-friendly replacement remains a training
+target and is not presented as a pretrained model yet.
 
-https://github.com/user-attachments/assets/c2deeb1f-4566-408b-bdb9-71b3605c5c1e
+> Restoration is generative: it estimates plausible detail and cannot recover
+> information that the mosaic destroyed. Use it only on media you are allowed
+> to process.
 
-## ✨ What's New in Plus
+## Quick start
 
-This is an optimized fork of the original DeepMosaics project with significant performance improvements:
+Requirements: Python 3.10+ (3.11 recommended), a current PyTorch/torchvision
+pair, OpenCV, PyYAML, and FFmpeg on `PATH`.
 
-- 🚀 **6x faster processing** - Optimized GPU utilization (1h → 10 mins on AMD 7800XT)
-- 🎮 **AMD GPU support** - DirectML integration for AMD graphics cards
-- ⚡ **Hardware acceleration** - DirectX 11 for AMD, CUDA for NVIDIA
-- 🎬 **Modern UI** - Modern video-editor style UI that shows what is being detected and cleaned in real time
-- 🔧 **Auto-detection** - Automatically detects and uses available GPU
-- 🐛 **Bug fixes planned** - Auto dependency instllation, async I/O, batch processing
-
-> **Note**: The original project was revolutionary for the time - a proof of concept of sorts - and as such does not use CPU/GPU resources efficiently. This fork addresses that with substantial performance gains. Most programs also only use CUDA which locks all AMD GPU users out. Only the mosaic removal part was optimized, adding mosaics was not touched by me.
-
----
-
-## 🎯 Features
-
-- **Image & Video Processing** - Remove mosaics from both static images and video files
-- **Multiple Network Architectures** - UNet, ResNet, HD models for different use cases
-- **Flexible Detection** - Adjustable sensitivity for mosaic detection
-- **Traditional Fallback** - Non-AI method available for edge cases
-- **GUI & CLI** - Choose between graphical interface or command-line operation
-- **Customizable Output** - Control resolution, FPS, and processing parameters
-
----
-
-## 🖼️ Results
-
-![Demo](./imgs/hand.gif)
-
-### Comparison with DeepCreamPy
-
-|                Mosaic Image                |            DeepCreamPy             |                DeepMosaicsPlus                |
-| :----------------------------------------: | :--------------------------------: | :-------------------------------------------: |
-| ![image](./imgs/example/face_a_mosaic.jpg) | ![image](./imgs/example/a_dcp.png) |     ![image](./imgs/example/face_a_clean.jpg) |
-| ![image](./imgs/example/face_b_mosaic.jpg) | ![image](./imgs/example/b_dcp.png) |     ![image](./imgs/example/face_b_clean.jpg) |
-
----
-
-## 🚀 Quick Start
-
-### Option 1: GUI (Easiest)
-
-After installing dependencies/using the install script, double-click `deepmosaicui_modern_NEW.pyw` or run:
-```bash
-python deepmosaicui_modern_NEW.pyw
-```
-
-### Option 2: Command Line
+With `uv`, the checked-in project metadata and lockfile install the complete
+CLI/runtime environment automatically:
 
 ```bash
-python deepmosaic.py --media_path "weenus.mkv" --model_path "clean_youknow_video.pth"
+uv sync
+uv run python deepmosaic.py --help
 ```
 
----
+The first `uv run` also performs the sync, so `uv sync` may be omitted.
+Optional entry points use extras: `uv sync --extra stable-ui` for the stable
+GUI, `--extra modern-ui` for the PyQt GUI, and `--extra server` for HTTP mode.
 
-## 📋 Requirements
-
-### System Requirements
-- **OS**: Windows (DirectML requirement)
-- **Python**: 3.6 or higher
-- **GPU**: Any AMD or NVIDIA GPU (CPU fallback available)
-
-### Dependencies
-
-#### Core Libraries
-- [PyTorch 1.0+](https://pytorch.org/)
-- [FFmpeg 3.4.6](http://ffmpeg.org/)
-- opencv-python
-- torchvision
-
-#### GPU Support
-- **AMD GPUs**: torch_directml (auto-detects DirectML devices)
-- **NVIDIA GPUs**: CUDA toolkit
-
-#### GUI (Optional)
-- customtkinter (old UI)
-- PyQt6 (new UI)
-
----
-
-## ⚙️ Installation
-
-### Option A: Download Release (Easiest)
-
-Download the latest pre-packaged release with models included:
-
-**[📦 Download DeepMosaicsPlus.zip](https://github.com/foooooooooooooooooooooooooootw/DeepMosaicsPlus/releases/latest/download/DeepMosaicsPlus.zip)**
-
-Extract the zip file and you're ready to go! Skip to the [Usage](#-usage) section.
-
-### Option B: Clone from Source
-
-### 1. Clone the Repository
 ```bash
 git clone https://github.com/foooooooooooooooooooooooooootw/DeepMosaicsPlus.git
 cd DeepMosaicsPlus
+python -m venv .venv
+source .venv/bin/activate                 # Windows: .venv\Scripts\activate
+python install_script.py
 ```
 
-### 2. Install Dependencies
-
-You can use the new install_script.py to install dependencies. If you want to do it manually then here - but the pip install provided below installs both new and old UI dependencies
+Run the quality backend on NVIDIA CUDA or Apple Silicon MPS:
 
 ```bash
-pip install torch torchvision opencv-python customtkinter pyqt6
+python deepmosaic.py \
+  --mode clean \
+  --media_path input.mp4 \
+  --model quality \
+  --device auto \
+  --no_preview
 ```
 
-**For AMD GPUs:**
+The first run downloads both author-provided checkpoints into
+`pretrained_models/cache/`, verifies their SHA-256 hashes, and then loads them:
+
+- DeepMosaics BiSeNet `mosaic_position.pth` for mosaic localization.
+- LADA generic v1.2 BasicVSR++ for restoration.
+
+For the graphical interface, run the UI that exposes the unified model/device
+selectors:
+
 ```bash
-pip install torch-directml
+python deepmosaicui.pyw
 ```
 
-**For NVIDIA GPUs:** Install CUDA toolkit from [NVIDIA's website](https://developer.nvidia.com/cuda-downloads)
+## Hardware support
 
-### 3. Download Pre-trained Models
+| Hardware | Inference | Training scope | Default policy |
+|---|---|---|---|
+| NVIDIA, 6–12 GB | CUDA quality backend | Fine-tune or train from scratch | official LADA |
+| Apple Silicon | MPS quality/legacy inference | Single-machine compact-model fine-tune | official LADA |
+| AMD on Windows | DirectML legacy checkpoint | Not currently supported by the new trainer | user-supplied legacy model |
+| CPU | Traditional fallback; neural models are possible but slow | Smoke tests only | traditional |
 
-Download models and place them in `./pretrained_models/`
+The automatic memory profile uses 320px/4-frame restoration calls around 6 GB
+CUDA, 384px/6 frames around 8 GB, 512px/8 frames around 12 GB, and a conservative
+384px/4-frame MPS profile. Override it when needed:
 
-- [[Google Drive]](https://drive.google.com/open?id=1LTERcN33McoiztYEwBxMuRjjgxh4DEPs) 
-- [[百度云, 提取码 1x0a]](https://pan.baidu.com/s/10rN3U3zd5TmfGpO_PEShqQ)
-- [[Model Information]](./docs/pre-trained_models_introduction.md)
-
-**Required files**: Place `mosaic_position.pth` and `clean_youknow_video.pth` in the same directory as `deepmosaic.py`
-
----
-
-## 🎮 Usage
-
-### Basic Command
 ```bash
-python deepmosaic.py --media_path "input.mp4" --model_path "clean_youknow_video.pth"
+python deepmosaic.py --mode clean --media_path input.mp4 --model quality \
+  --device cuda --max_restore_side 320 --restore_clip_len 4 --no_preview
 ```
 
-### Process Specific Time Range
+Explicit device requests fail clearly when unavailable; the program does not
+silently move a named model to another backend. On AMD/DirectML, pass an
+original DeepMosaics pix2pix checkpoint explicitly:
+
 ```bash
-python deepmosaic.py --media_path "video.mp4" \
-                      --start_time "00:01:30" \
-                      --last_time "00:05:00" \
-                      --model_path "clean_youknow_video.pth"
+uv sync --extra directml
 ```
 
-### Adjust Detection Sensitivity
 ```bash
-python deepmosaic.py --media_path "image.jpg" \
-                      --mask_threshold 30 \
-                      --model_path "clean_youknow_video.pth"
+python deepmosaic.py --mode clean --media_path input.mp4 \
+  --device directml --model legacy \
+  --model_path /path/to/clean_unet_128_youknow.pth --no_preview
 ```
-*Lower threshold = more sensitive detection*
 
----
+The official DeepMosaics BVDNet video checkpoint is also available as the
+`dm-baseline` model on CUDA, MPS, and CPU:
 
-## 📖 Command-Line Arguments
+```bash
+python deepmosaic.py --mode clean --media_path input.mp4 \
+  --device mps --model dm-baseline --no_preview
+```
 
-### Essential Arguments
+## Models
 
-| Argument         | Type  | Default                   | Description                                    |
-| ---------------- | ----- | ------------------------- | ---------------------------------------------- |
-| `--media_path`   | `str` | `'./imgs/ruoruo.jpg'`     | Path to input image or video                   |
-| `--model_path`   | `str` | `'./clean_youknow_video.pth'` | Path to the pretrained model               |
-| `--result_dir`   | `str` | `'./result'`              | Output directory                               |
-| `--gpu_id`       | `str` | `'0'`                     | GPU ID (auto-detected with DirectML)           |
+All model selection goes through
+[`restoration/manifests/models.yaml`](restoration/manifests/models.yaml).
 
-### Video Processing
+| CLI name | Backend | Weights | Status |
+|---|---|---|---|
+| `quality`, `lada` | official LADA BasicVSR++ | auto-download, hash verified | released baseline |
+| `dm-baseline` | original DeepMosaics BVDNet | auto-download, hash verified | released baseline |
+| `traditional` | blur/down/up | none | released fallback |
+| `lite` | MosaicVR-Lite | none published | training target |
+| `portable-dev` | compact BasicVSR++-style research model | none published | development only |
+| `legacy` or `path.pth` | original pix2pix family | user supplied | compatibility path |
 
-| Argument              | Type  | Default       | Description                              |
-| --------------------- | ----- | ------------- | ---------------------------------------- |
-| `-ss`, `--start_time` | `str` | `'00:00:00'`  | Start time (HH:MM:SS)                    |
-| `-t`, `--last_time`   | `str` | `'00:00:00'`  | Duration (`00:00:00` = entire video)     |
-| `--fps`               | `int` | `0`           | Output FPS (`0` = keep original)         |
+`--model auto` selects `quality` on CUDA/MPS, `legacy` on DirectML, and
+`traditional` on CPU. DirectML therefore requires a valid `--model_path`.
+See [the model manifest guide](docs/model_manifest.md) for cache layout and
+custom manifests.
 
-### Detection & Processing
+## Quality calibration and closed-loop tests
 
-| Argument                       | Type   | Default  | Description                                         |
-| ------------------------------ | ------ | -------- | --------------------------------------------------- |
-| `--mask_threshold`             | `int`  | `48`     | Mosaic detection sensitivity (0-255, lower = more)  |
-| `--netG`                       | `str`  | `'auto'` | Network: `unet_128`, `unet_256`, `resnet_9blocks`, `HD`, `video` |
-| `--mosaic_position_model_path` | `str`  | `'auto'` | Model for detecting mosaic positions                |
-| `--all_mosaic_area`            | `flag` | `True`   | Find all mosaic regions (not just largest)         |
-| `--no_feather`                 | `flag` | `False`  | Disable edge feathering (faster, lower quality)     |
+The closed loop generates a deterministic two-scene video, mosaics known
+regions, runs the real CLI, and checks frame count, audio, duration, dimensions,
+backend coverage, composite geometry, PSNR, SSIM, and scene-cut-aware temporal
+residual error:
 
-### Advanced Options
+```bash
+python tools/closed_loop_test.py \
+  --model quality --device mps --restore-strength 0.15 \
+  --work-dir /tmp/dmp_closed_loop_quality
+```
 
-| Argument           | Type   | Default | Description                                  |
-| ------------------ | ------ | ------- | -------------------------------------------- |
-| `--traditional`    | `flag` | `False` | Use non-AI traditional method                |
-| `--no_preview`     | `flag` | `False` | Disable preview window (for servers)         |
-| `--output_size`    | `int`  | `0`     | Output resolution (`0` = original)           |
-| `--temp_dir`       | `str`  | `'./tmp'` | Temporary files directory                  |
-| `--debug`          | `flag` | `False` | Enable debug mode                            |
+Calibrate a blend strength on one split and require PSNR/SSIM gains without
+temporal regression on a disjoint holdout:
 
-For complete documentation, see [[options_introduction.md]](./docs/options_introduction.md)
+```bash
+python tools/optimize_restoration.py \
+  --model quality --device mps \
+  --work-dir /tmp/dmp_closed_loop_quality \
+  --output /tmp/dmp_closed_loop_quality/optimization_report.json
+```
 
----
+`--restore_strength` ranges from `0` (source mosaic) to `1` (full model). A
+synthetic calibration result is evidence about the test fixture, not a universal
+default. Promote a value only after it passes a representative, licensed real
+holdout set.
 
-## 🔧 Technical Details
+Random-weight fixtures are isolated from production caches:
 
-### GPU Acceleration
+```bash
+python tools/make_smoke_fixtures.py
+```
 
-**DirectML (AMD GPUs)**
-- Automatically detects DirectML-capable devices
-- Hardcoded to use GPU with CPU fallback
-- Uses DirectX 11 for hardware video acceleration
-- No need for `--gpu_id` argument
+They are intentionally unusable as quality models and cannot be written under
+`pretrained_models/` by that tool.
 
-**CUDA (NVIDIA GPUs)**
-- Uses CUDA for hardware acceleration
-- Specify GPU with `--gpu_id` (e.g., `--gpu_id 0` by default)
+## Training your own compact model
 
-### Performance Optimization
+Dataset layout:
 
-This fork improves on the original by:
-- Better GPU utilization (original barely used GPU resources)
-- Optimized FFmpeg arguments for hardware acceleration
-- DirectML integration for broader GPU support
+```text
+datasets/face/<clip>/origin_image/00001.jpg
+datasets/face/<clip>/mask/00001.png
+```
 
----
+The trainer performs online mosaic/degradation synthesis and combines pixel,
+optional VGG perceptual, multi-scale GAN, and feature-matching losses. Start a
+compact CUDA run:
 
-## 🏗️ Training Your Own Models
+```bash
+python train/mosaicvr/train.py \
+  --arch lite --dataset ./datasets/face --device cuda \
+  --batchsize 1 --finesize 256 --T 5 \
+  --val_dataset ./datasets/face_val --val_steps 20
+```
 
-Want to train on custom datasets? Check out the [training guide](./docs/training_with_your_own_dataset.md).
+After you have a compatible self-trained compact checkpoint, fine-tune it on
+Apple Silicon. No pretrained compact starting checkpoint is published yet;
+the official LADA checkpoint is a different architecture. Smaller crops and
+three-frame clips are the practical starting point for unified memory:
 
----
+```bash
+python train/mosaicvr/train.py \
+  --arch lite --dataset ./datasets/face --device mps \
+  --continue_train checkpoints/lite_256/lite_final.pth \
+  --batchsize 1 --loadsize 160 --finesize 128 --T 3 \
+  --lambda_VGG 0
+```
 
-## 📝 Roadmap
+Full from-scratch BasicVSR++ training remains CUDA-oriented:
 
-- [ ] Add new output formats for encoding (HEVC, AV1, etc)
-- [ ] Make multiple models specifically meant for anime/real life + different pixel sizes
+```bash
+python train/mosaicvr/train.py \
+  --arch basicvsrpp --dataset ./datasets/face --device cuda
+```
 
----
+Checkpoint files contain generator/discriminator and optimizer state for
+resuming. A trained generator can be published through a custom manifest
+without changing runtime code, or run directly with an explicit backend prefix:
 
-## 🙏 Acknowledgements
+```bash
+python deepmosaic.py --mode clean --media_path input.mp4 \
+  --model lite:checkpoints/lite_256/lite_final.pth \
+  --device mps --no_preview
+```
 
-This project builds upon excellent work from:
+## Useful CLI options
 
-- [DeepMosaics](https://github.com/HypoX64/DeepMosaics) - Original codebase
+```text
+--model auto|quality|dm-baseline|traditional|legacy|legacy.pth
+        |lite:/path.pth|portable:/path.pth
+--device auto|cuda|mps|directml|cpu
+--restore_strength 0.0..1.0
+--max_restore_side 0     # source-content cap before required padding; >=64
+--restore_clip_len 0     # auto by device memory
+--mask_threshold 48      # auto-adapted; use --no_auto_adapt to fix
+--min_mosaic_area 150    # auto-lowered; use --no_auto_adapt to fix
+--min_mosaic_size 40     # auto-lowered; use --no_auto_adapt to fix
+--all_mosaic_area        # detect all regions per frame (multi-mosaic, auto-enabled for multi)
+--no_auto_adapt          # disable automatic threshold/size adaptation
+--start_time HH:MM:SS
+--last_time HH:MM:SS
+--fps 0                 # preserve source rate
+--no_preview
+```
+
+Automatic mosaic detection adapts `mask_threshold`/`min_mosaic_area`/`min_mosaic_size`
+per image/video (`--no_auto_adapt` disables it). Multi-mosaic is handled
+simultaneously: a 1280×720 clip with 1–3 mosaics is verified in closed-loop
+(single `+4.62 dB`, dual `+4.24/+4.85 dB`, triple `+4.16/+3.48/+4.24 dB` PSNR
+on the mosaicked crops).
+
+See [all options](docs/options_introduction.md).
+
+For the optional HTTP service, provide the complete corresponding-source URL
+for the exact deployed revision; every response exposes it:
+
+```bash
+python tools/server.py --model quality --device auto \
+  --source_url https://example.org/source/deepmosaicsplus-exact-revision.tar.gz
+```
+
+## Architecture
+
+```text
+CLI / GUI / server
+        |
+RestorationService  detect -> track/group -> crop -> restore -> composite
+        |
+RestorationBackend  BGR uint8 frames in -> same count and size out
+        |
+ModelManager        manifest -> download -> SHA-256 -> atomic cache publish
+        |
+DeviceManager       CUDA / MPS / DirectML / CPU
+```
+
+Temporal sequence handling, model-specific padding/color conversion, and
+compositing are centralized so legacy BVDNet and newer restoration backbones
+obey the same frame/geometry contract.
+
+## License and provenance
+
+The original DeepMosaics-derived portions remain under GPL-3.0. The integrated
+LADA code and official LADA restoration checkpoint are AGPL-3.0; consequently,
+distribution or network use of the combined quality path must satisfy the
+applicable AGPL-3.0 source-availability terms. See [`NOTICE.md`](NOTICE.md),
+[`LICENSE`](LICENSE), and [`thirdparty/lada/LICENSE`](thirdparty/lada/LICENSE).
+
+Principal upstream projects:
+
+- [DeepMosaics](https://github.com/HypoX64/DeepMosaics)
+- [LADA](https://github.com/ladaapp/lada)
+- [MMagic / BasicVSR++](https://github.com/open-mmlab/mmagic)
 - [pytorch-CycleGAN-and-pix2pix](https://github.com/junyanz/pytorch-CycleGAN-and-pix2pix)
-- [Pytorch-UNet](https://github.com/milesial/Pytorch-UNet)
 - [pix2pixHD](https://github.com/NVIDIA/pix2pixHD)
-- [BiSeNet](https://github.com/ooooverflow/BiSeNet)
-- [DFDNet](https://github.com/csxmli2016/DFDNet)
-- [GFRNet_pytorch_new](https://github.com/sonack/GFRNet_pytorch_new)
 
-**Special thanks** to the original DeepMosaics project. This fork exists to optimize performance and add AMD GPU support. 🚀
+## Known boundaries
 
----
-
-## 💬 Support
-
-Found a bug or have a feature request? [Open an issue](https://github.com/foooooooooooooooooooooooooootw/DeepMosaicsPlus/issues)
-
----
-
-<div align="center">
-  
-**If this project helped you, consider giving it a ⭐!**
-
-</div>
+- The current quality release is the official LADA baseline, not the planned
+  compact replacement.
+- MPS inference and a one-iteration compact fine-tune have hardware tests; long
+  training stability still needs a representative dataset run.
+- CUDA and DirectML paths require hardware-specific release validation before a
+  binary release is called production-ready.
+- Detector quality must be evaluated on curated real examples; synthetic
+  gradients are useful for pipeline invariants but are out of distribution for
+  the author detector.
