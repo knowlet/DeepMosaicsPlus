@@ -7,6 +7,24 @@ from .pix2pixHD_model import define_G as pix2pixHD_G
 from .BiSeNet_model import BiSeNet
 from .BVDNet import define_G as video_G
 
+
+def _resolve_device(opt):
+    """Single source of truth: restoration.device_manager.DeviceManager."""
+    if hasattr(opt, 'device'):
+        from restoration.device_manager import DeviceManager
+        return DeviceManager(getattr(opt, 'device', 'auto'), quiet=True).info.device
+    return next(model_util.todevice(
+        torch.nn.Linear(1, 1), getattr(opt, 'gpu_id', '-1')).parameters()).device
+
+
+def _load_tensors(path):
+    return torch.load(path, map_location='cpu', weights_only=True)
+
+
+def _place(net, opt):
+    dev = _resolve_device(opt)
+    return net.to(dev)
+
 def show_paramsnumber(net,netname='net'):
     parameters = sum(param.numel() for param in net.parameters())
     parameters = round(parameters/1e6,2)
@@ -19,8 +37,8 @@ def pix2pix(opt):
     else:
         netG = pix2pix_G(3, 3, 64, opt.netG, norm='batch',use_dropout=True, init_type='normal', gpu_ids=[])
     show_paramsnumber(netG,'netG')
-    netG.load_state_dict(torch.load(opt.model_path))
-    netG = model_util.todevice(netG,opt.gpu_id)
+    netG.load_state_dict(_load_tensors(opt.model_path))
+    netG = _place(netG, opt)
     netG.eval()
     return netG
 
@@ -37,7 +55,7 @@ def style(opt):
         netG = netG.module
     # if you are using PyTorch newer than 0.4 (e.g., built from
     # GitHub source), you can remove str() on self.device
-    state_dict = torch.load(opt.model_path, map_location='cpu')
+    state_dict = _load_tensors(opt.model_path)
     if hasattr(state_dict, '_metadata'):
         del state_dict._metadata
 
@@ -46,15 +64,15 @@ def style(opt):
         model_util.patch_instance_norm_state_dict(state_dict, netG, key.split('.'))
     netG.load_state_dict(state_dict)
 
-    netG = model_util.todevice(netG,opt.gpu_id)
+    netG = _place(netG, opt)
     netG.eval()
     return netG
 
 def video(opt):
     netG = video_G(N=2,n_blocks=4,gpu_id=opt.gpu_id)
     show_paramsnumber(netG,'netG')
-    netG.load_state_dict(torch.load(opt.model_path))
-    netG = model_util.todevice(netG,opt.gpu_id)
+    netG.load_state_dict(_load_tensors(opt.model_path))
+    netG = _place(netG, opt)
     netG.eval()
     return netG
 
@@ -65,9 +83,9 @@ def bisenet(opt,type='roi'):
     net = BiSeNet(num_classes=1, context_path='resnet18',train_flag=False)
     show_paramsnumber(net,'segment')
     if type == 'roi':
-        net.load_state_dict(torch.load(opt.model_path))
+        net.load_state_dict(_load_tensors(opt.model_path))
     elif type == 'mosaic':
-        net.load_state_dict(torch.load(opt.mosaic_position_model_path))
-    net = model_util.todevice(net,opt.gpu_id)
+        net.load_state_dict(_load_tensors(opt.mosaic_position_model_path))
+    net = _place(net, opt)
     net.eval()
     return net
