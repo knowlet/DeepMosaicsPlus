@@ -1,0 +1,41 @@
+[project]
+name = "deepmosaicsplus"
+version = "0.6.0"
+description = "Mosaic-aware image and video restoration"
+readme = "README.md"
+requires-python = ">=3.10,<3.14"
+dependencies = [
+    "numpy>=1.26,<3",
+    "opencv-python>=4.8,<6",
+    "pyyaml>=6,<7",
+    "torch>=2.8,<3; sys_platform == 'darwin' and platform_machine == 'arm64'",
+    "torch>=2.4,<3; sys_platform != 'darwin' or platform_machine != 'arm64'",
+    "torchvision>=0.23,<1; sys_platform == 'darwin' and platform_machine == 'arm64'",
+    "torchvision>=0.19,<1; sys_platform != 'darwin' or platform_machine != 'arm64'",
+    "tqdm>=4.66,<5",
+]
+
+[project.optional-dependencies]
+server = [
+    "flask>=3.0,<4",
+]
+stable-ui = [
+    "customtkinter>=5.2,<6",
+]
+modern-ui = [
+    "pyqt6>=6.6,<7",
+]
+directml = [
+    "torch-directml==0.2.5.dev240914; sys_platform == 'win32'",
+]
+training = [
+    "tensorboardx>=2.6,<3",
+]
+legacy-training = [
+    "matplotlib>=3.8,<4",
+    "scikit-image>=0.22,<1",
+    "tensorboardx>=2.6,<3",
+]
+
+[tool.uv]
+package = false

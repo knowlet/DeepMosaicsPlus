@@ -133,12 +133,17 @@ dmypy.json
 __pycache__/
 tmp/
 checkpoints/
+closed_loop_artifacts/
 mask/
 mask_old/
 origin_image/
 datasets/
 dataset/
 test*
+!tests/
+!tests/**
+tests/__pycache__/
+**/__pycache__/
 video_tmp/
 result/
 nohup.out
